@@ -40,7 +40,6 @@ jobs:
         run: |
           Rscript -e 'install.packages(
             c("ggplot2","dplyr","tidyr","tibble","purrr","jsonlite","httr"),
-            dependencies = TRUE,
             repos = "https://cloud.r-project.org"
           )'
 
