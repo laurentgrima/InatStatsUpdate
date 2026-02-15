@@ -2,21 +2,23 @@ name: Generate random plot
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 jobs:
   generate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.5'
 
-      - name: Install ggplot2 (minimal)
+      - name: Install ggplot2 (with R deps only)
         run: |
-          Rscript -e 'install.packages("ggplot2", repos="https://cloud.r-project.org", dependencies = FALSE)'
+          Rscript -e 'install.packages("ggplot2", repos="https://cloud.r-project.org")'
 
       - name: Run script
         run: Rscript generate_plot.R
