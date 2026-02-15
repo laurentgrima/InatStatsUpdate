@@ -87,6 +87,12 @@ p <- ggplot(summary_df, aes(x = reorder(ton_lycee, -count), y = count, fill = ty
     legend.text = element_text(size = 12, face = "italic")
   ) +
   scale_fill_manual(values = colors_elegant) +
-  ylim(0, max(summary_df$count) * 1.15) 
+  ylim(0, max(summary_df$count) * 1.15) +
+    annotate("text",
+           x = Inf, y = -Inf,                 # coins du graphique
+           label = format(Sys.time(), "%Y-%m-%d %H:%M"),
+           hjust = 1.1, vjust = 0.0,        # ajustement pour coller aux bords
+           size = 4.5,                        # taille du texte
+           color = "black")
 
 ggsave("barplot_lycee_valeurs.png", plot = p, width = 10, height = 6, dpi = 300)
