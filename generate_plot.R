@@ -1,74 +1,106 @@
-# generate_plot.R
 library(httr)
 library(jsonlite)
 library(dplyr)
-library(ggplot2)
+library(tibble)
+library(purrr)
 
+# Project slug
 project_id <- "test-projet-challenge-lyceen-cnc-2026-marseille"
-per_page <- 200
-page <- 1
-all_obs <- list()
 
-repeat {
-  url <- paste0(
-    "https://api.inaturalist.org/v1/observations?",
-    "project_id=", project_id,
-    "&per_page=", per_page,
-    "&page=", page
+# Base URL
+base_url <- "https://api.inaturalist.org/v1/observations"
+
+# Fetch observations
+res <- GET(
+  base_url,
+  query = list(
+    project_id = project_id,
+    per_page = 100,
+    order = "desc",
+    order_by = "created_at"
   )
-  
-  res <- GET(url)
-  data <- fromJSON(content(res, "text", encoding = "UTF-8"))
-  
-  obs <- data$results
-  if (length(obs) == 0) break
-  
-  all_obs <- append(all_obs, obs)
-  page <- page + 1
-}
+)
 
-# Convertir en data.frame et récupérer le champ "Ton lycée"
-obs_df <- bind_rows(lapply(all_obs, function(x) {
-  # Champ personnalisé
-  lycee <- NA
-  if(length(x$observation_field_values) > 0) {
-    field <- x$observation_field_values
-    if(any(sapply(field, function(f) f$field$name) == "Ton lycée")) {
-      lycee <- sapply(field, function(f) if(f$field$name == "Ton lycée") f$value else NA)
-      lycee <- lycee[!is.na(lycee)][1]
-    }
-  }
-  
-  data.frame(
-    user_login = x$user$login,
-    taxon_id = ifelse(is.null(x$taxon$id), NA, x$taxon$id),
-    lycee = lycee,
-    stringsAsFactors = FALSE
-  )
-}))
+# Parse JSON
+data_json <- content(res, as = "text", encoding = "UTF-8")
+data <- fromJSON(data_json, flatten = TRUE)
 
-# Statistiques par utilisateur et par lycée
-user_stats <- obs_df %>%
-  group_by(user_login, lycee) %>%
+# Transformer en data frame
+obs_df <- data$results %>%
+  tibble::as_tibble() %>%
+  mutate(
+    ton_lycee = map_chr(ofvs, function(ofv) {
+      if (length(ofv) == 0) return(NA)
+      # ofv est un data frame, colonne 'name' contient le nom du champ
+      val <- ofv$value[ofv$name == "Ton lycée"]
+      if(length(val) == 0) return(NA)
+      val
+    }),
+    species = taxon.name,
+    common_name = taxon.preferred_common_name,
+    user = user.login,
+    date = observed_on,
+    quality = quality_grade,
+    obs_id = id
+  ) %>%
+  select(obs_id, date, species, common_name, user, ton_lycee, quality)
+
+# Vérification
+head(obs_df)
+
+
+###
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Remplacer les NA par "Inconnu" pour que ggplot les affiche
+obs_df_clean <- obs_df %>%
+  mutate(ton_lycee = ifelse(is.na(ton_lycee), "Inconnu", ton_lycee))
+
+
+
+# Calculer le nombre d'observations et d'espèces par lycée
+summary_df <- obs_df_clean %>%
+  group_by(ton_lycee) %>%
   summarise(
     n_observations = n(),
-    n_species = n_distinct(taxon_id),
+    n_species = n_distinct(species),
     .groups = "drop"
   ) %>%
-  arrange(desc(n_observations))
+  pivot_longer(cols = c(n_observations, n_species),
+               names_to = "type",
+               values_to = "count") %>%
+  mutate(type = recode(type,
+                       n_observations = "Total des observations",
+                       n_species = "Nombre d'espèces"))
 
-# Barplot : observations par utilisateur, couleur = lycée
-p <- ggplot(user_stats, aes(x = reorder(user_login, -n_observations), 
-                            y = n_observations, fill = lycee)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = n_species), vjust = -0.5, size = 3) +
-  theme_minimal() +
+# Palette pastel élégante
+colors_elegant <- c("Total des observations" = "#6baed6", "Nombre d'espèces" = "#fd8d3c")
+
+# Création du barplot avec valeurs au-dessus des barres
+p <- ggplot(summary_df, aes(x = reorder(ton_lycee, -count), y = count, fill = type)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9), color = "gray30", alpha = 0.85) +
+  geom_text(aes(label = count), 
+            position = position_dodge(width = 0.9), 
+            vjust = -0.5, 
+            size = 4, 
+            fontface = "bold") +
   labs(
-    title = paste("Observations et espèces par utilisateur -", project_id),
-    x = "Utilisateur",
-    y = "Nombre d'observations",
-    fill = "Lycée"
+    title = "Nobre d'observations et nombre d'espèces différentes par lycée",
+    x = "",
+    y = "",
+    fill = ""  # légende sans titre
   ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme_minimal(base_size = 14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, face = "bold", color = "gray20"),
+    legend.position = "top",
+    legend.text = element_text(size = 12, face = "italic")
+  ) +
+  scale_fill_manual(values = colors_elegant) +
+  ylim(0, max(summary_df$count) * 1.15)  # pour que les labels passent au-dessus des barres
 
-ggsave("plot.png", plot = p, width = 12, height = 6, dpi = 300)
+# Sauvegarder en PNG
+ggsave("barplot_lycee_valeurs.png", plot = p, width = 10, height = 6, dpi = 300)
