@@ -56,11 +56,15 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
       
+          # Ajouter un timestamp interne dans le PNG pour forcer git à détecter un changement
+          sudo apt-get update && sudo apt-get install -y imagemagick
+          convert barplot_lycee_valeurs.png -set comment "$(date +%s)" barplot_lycee_valeurs.png
+      
           # Ajouter le plot généré
           git add barplot_lycee_valeurs.png
       
           # Commit si changements
-          git commit -m "Update barplot lycee" || echo "No changes to commit"
+          git commit -m "Update barplot lycee $(date +%s)" || echo "No changes to commit"
       
           # Pousser vers main avec le token sécurisé
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
