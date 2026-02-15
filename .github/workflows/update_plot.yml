@@ -10,16 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup R
-        uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r@v2
 
-      - name: Setup R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: ggplot2
+      - name: Install ggplot2 (minimal)
+        run: |
+          Rscript -e 'install.packages("ggplot2", repos="https://cloud.r-project.org", dependencies = FALSE)'
 
       - name: Run script
         run: Rscript generate_plot.R
