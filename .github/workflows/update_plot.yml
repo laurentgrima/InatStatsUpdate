@@ -2,7 +2,7 @@ name: Generer barplot Inat Lycées
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # toutes les 15 minutes pour test ; adapte selon tes besoins
+    - cron: "0 0 * * *"   
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # 1. Récupérer le code du dépôt
       - uses: actions/checkout@v4
 
       # 2. Installer R
