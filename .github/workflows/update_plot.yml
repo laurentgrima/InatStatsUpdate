@@ -1,8 +1,8 @@
-name: Generate random plot
+name: Generer graph Inat Projet CNC
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
         run: |
           Rscript -e 'install.packages(c(
             "ggplot2", "cli", "gtable", "isoband", "lifecycle", 
-            "rlang", "S7", "scales", "vctrs", "withr"
+            "rlang", "S7", "scales", "vctrs", "withr, dplyr, jsonlite, httr"
           ), repos="https://cloud.r-project.org")'
 
       - name: Run R script
