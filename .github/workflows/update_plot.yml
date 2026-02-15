@@ -19,7 +19,7 @@ jobs:
         run: |
           Rscript -e 'install.packages(c(
             "ggplot2", "cli", "gtable", "isoband", "lifecycle", 
-            "rlang", "S7", "scales", "vctrs", "withr, dplyr, jsonlite, httr"
+            "rlang", "S7", "scales", "vctrs", "withr", "dplyr", "jsonlite", "httr"
           ), repos="https://cloud.r-project.org")'
 
       - name: Run R script
