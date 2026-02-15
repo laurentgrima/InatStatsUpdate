@@ -19,14 +19,13 @@ jobs:
       - name: Install ggplot2 (with R deps only)
         run: |
           Rscript -e 'install.packages("ggplot2", repos="https://cloud.r-project.org")'
-
-      - name: Run script
-        run: Rscript generate_plot.R
-
-      - name: Commit and push plot
+      - name: Configure Git
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
+      - name: Commit and push plot
+        run: |
           git add plot.png
-          git commit -m "Update plot" || echo "No changes"
-          git push
+          git commit -m "Update plot" || echo "No changes to commit"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
