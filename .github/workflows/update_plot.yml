@@ -12,12 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 2. Installer R
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: '4.5'
 
-      # 3. Installer dépendances système pour R
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -27,14 +25,12 @@ jobs:
             libxml2-dev \
             libgit2-dev
 
-      # 4. Cacher les packages R pour accélérer les runs futurs
       - name: Cache R packages
         uses: actions/cache@v3
         with:
           path: ${{ runner.os }}/Library/R/4.5
           key: ${{ runner.os }}-r-${{ hashFiles('**/*.R') }}
 
-      # 5. Installer les packages R nécessaires
       - name: Install R packages
         run: |
           Rscript -e 'install.packages(
@@ -42,21 +38,19 @@ jobs:
             repos = "https://cloud.r-project.org"
           )'
 
-      # 6. Lancer le script R qui génère le barplot
       - name: Run R script
         run: Rscript generate_plot_lycee.R
 
-      # 7. Vérifier que le fichier est créé
       - name: Check generated files
         run: ls -l
 
-      # 8. Commit et push de l'image dans le repo
       - name: Commit and push plot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git pull --rebase origin main
           git add barplot_lycee_valeurs.png
           git commit -m "Update barplot lycee" || echo "No changes to commit"
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
