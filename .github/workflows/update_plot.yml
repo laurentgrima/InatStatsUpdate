@@ -2,7 +2,7 @@ name: Generer barplot Inat Lycées
 
 on:
   schedule:
-    - cron: "0 0 * * *"   
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -51,20 +51,16 @@ jobs:
           # Configurer Git
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-      
-          # Synchroniser la branche main pour éviter les conflits
+
+          # Mettre à jour la branche locale, mais sans écraser les fichiers locaux
           git fetch origin main
-          git reset --hard origin/main
-      
-          # Ajouter un timestamp interne dans le PNG pour forcer git à détecter un changement
-          sudo apt-get update && sudo apt-get install -y imagemagick
-          convert barplot_lycee_valeurs.png -set comment "$(date +%s)" barplot_lycee_valeurs.png
-      
+          git merge origin/main --ff-only   # fast-forward merge si possible
+
           # Ajouter le plot généré
           git add barplot_lycee_valeurs.png
-      
+
           # Commit si changements
           git commit -m "Update barplot lycee $(date +%s)" || echo "No changes to commit"
-      
-          # Pousser vers main avec le token sécurisé
+
+          # Pousser vers main
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
